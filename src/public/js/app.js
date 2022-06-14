@@ -1,12 +1,14 @@
 const socket = io();
 
 const welcome = document.getElementById("welcome");
-const form = welcome.querySelector("form");
+const roomForm = welcome.querySelector("#roomname");
+const nickForm = welcome.querySelector('#nickname');
 const room = document.getElementById("room");
 
 room.hidden = true;
 
 let roomName;
+let nickName = "";
 
 function addMessage(message) {
     const ul = room.querySelector("ul");
@@ -27,40 +29,46 @@ function handleMessageSubmit (event) {
 
 function handleNicknameSubmit (event) {
     event.preventDefault();
-    const input = room.querySelector("#name input");
-    socket.emit("nickname", input.value);
+    const input = nickForm.querySelector("input");
+    nickName = input.value;
+    socket.emit("nickname", nickName);
 }
 
-function showRoom(msg) {
+function showUserCount(userCount) {
+    const h3 = room.querySelector("h3");
+    h3.innerText = `Room ${roomName} (${userCount})`;
+}
+
+function showRoom(userCount) {
     welcome.hidden = true;
     room.hidden = false;
-    const h3 = room.querySelector("h3");
-    h3.innerText = `Room ${roomName}`;
+    showUserCount(userCount);
     const msgForm = room.querySelector("#msg");
-    const nameForm = room.querySelector("#name");
     msgForm.addEventListener("submit", handleMessageSubmit)
-    nameForm.addEventListener("submit", handleNicknameSubmit);
 }
 
 function handleRoomSubmit(event) {
     event.preventDefault();
-    const input = form.querySelector("input");
+    if (nickName === "") {
+        alert("You Should Enter Nickname!!");
+        return;
+    }
+    const input = roomForm.querySelector("input");
     socket.emit("enter_room", input.value, showRoom);
     roomName = input.value;
     input.value = "";
 }
 
-form.addEventListener("submit", handleRoomSubmit);
+roomForm.addEventListener("submit", handleRoomSubmit);
+nickForm.addEventListener("submit", handleNicknameSubmit);
 
-socket.on("welcome", (user, newCount) => {
-    const h3 = room.querySelector("h3");
-    h3.innerText = `Room ${roomName} (${newCount})`;
+socket.on("welcome", (user, userCount) => {
+    showUserCount(userCount);
     addMessage(`${user} joined`);
 });
 
-socket.on("bye", (user, newCount) => {
-    const h3 = room.querySelector("h3");
-    h3.innerText = `Room ${roomName} (${newCount})`;
+socket.on("bye", (user, userCount) => {
+    showUserCount(userCount);
     addMessage(`${user} left`);
 });
 
